@@ -2,12 +2,14 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import numpy as np
 import os
+import datetime
 
 # Functions and classes for loading and using the Inception model.
 import inception
 
-def find_adversary_noise(image_path, cls_target, noise_limit=3.0,
-                         required_score=0.99, max_iterations=100):
+def find_adversary_noise(image_path, cls_target,
+                        log_file, result_file, noise_limit=3.0,
+                        required_score=0.99, max_iterations=100):
     """
     Find the noise that must be added to the given image so
     that it is classified as the target-class.
@@ -42,13 +44,15 @@ def find_adversary_noise(image_path, cls_target, noise_limit=3.0,
     name_target = model.name_lookup.cls_to_name(cls_target,
                                                 only_first_name=True)
 
+    log_file.write(image_path + "\n\n")
     # Initialize the noise to zero.
     noise = 0
-
+    iterations = 0
     # Perform a number of optimization iterations to find
     # the noise that causes mis-classification of the input image.
     for i in range(max_iterations):
-        print("Iteration:", i)
+        iterations = i
+        log_file.write("Iteration:" + str(i) + "\n")
 
         # The noisy image is just the sum of the input image and noise.
         noisy_image = image + noise
@@ -100,19 +104,16 @@ def find_adversary_noise(image_path, cls_target, noise_limit=3.0,
         step_size = 7 / grad_absmax
 
         # Print the score etc. for the source-class.
-        msg = "Source score: {0:>7.2%}, class-number: {1:>4}, class-name: {2}"
-        print(msg.format(score_source, cls_source, name_source))
+        msg = "Source score: {0:>7.2%}, class-number: {1:>4}, class-name: {2}\n"
+        log_file.write(msg.format(score_source, cls_source, name_source))
 
         # Print the score etc. for the target-class.
-        msg = "Target score: {0:>7.2%}, class-number: {1:>4}, class-name: {2}"
-        print(msg.format(score_target, cls_target, name_target))
+        msg = "Target score: {0:>7.2%}, class-number: {1:>4}, class-name: {2}\n"
+        log_file.write(msg.format(score_target, cls_target, name_target))
 
         # Print statistics for the gradient.
-        msg = "Gradient min: {0:>9.6f}, max: {1:>9.6f}, stepsize: {2:>9.2f}"
-        print(msg.format(grad.min(), grad.max(), step_size))
-
-        # Newline.
-        print()
+        msg = "Gradient min: {0:>9.6f}, max: {1:>9.6f}, stepsize: {2:>9.2f}\n\n"
+        log_file.write(msg.format(grad.min(), grad.max(), step_size))
 
         # If the score for the target-class is not high enough.
         if score_target < required_score:
@@ -131,7 +132,7 @@ def find_adversary_noise(image_path, cls_target, noise_limit=3.0,
 
     return image.squeeze(), noisy_image.squeeze(), noise, \
            name_source, name_target, \
-           score_source, score_source_org, score_target
+           score_source, score_source_org, score_target, iterations
 
 def normalize_image(x):
     # Get the min and max values for all pixels in the input.
@@ -145,7 +146,8 @@ def normalize_image(x):
 
 def plot_images(image, noise, noisy_image,
                 name_source, name_target,
-                score_source, score_source_org, score_target):
+                score_source, score_source_org, score_target, time, show_image,
+                image_path):
     """
     Plot the image, the noisy image and the noise.
     Also shows the class-names and scores.
@@ -209,10 +211,16 @@ def plot_images(image, noise, noisy_image,
     
     # Ensure the plot is shown correctly with multiple plots
     # in a single Notebook cell.
-    plt.show()
+    if (show_image):
+        plt.show()
+    else:
+        plt.savefig(time+image_path[6:])
+        plt.close('all')
 
-def adversary_example(image_path, cls_target,
-                      noise_limit, required_score):
+
+def adversary_example(
+    image_path, cls_target,
+                      noise_limit, required_score, log_file, result_file, time, show_image):
     """
     Find and plot adversarial noise for the given image.
     
@@ -225,27 +233,32 @@ def adversary_example(image_path, cls_target,
     # Find the adversarial noise.
     image, noisy_image, noise, \
     name_source, name_target, \
-    score_source, score_source_org, score_target = \
+    score_source, score_source_org, score_target, iterations = \
         find_adversary_noise(image_path=image_path,
                              cls_target=cls_target,
+                             log_file=log_file,
+                             result_file=result_file,
                              noise_limit=noise_limit,
-                             required_score=required_score)
+                             required_score=required_score,)
 
     # Plot the image and the noise.
     plot_images(image=image, noise=noise, noisy_image=noisy_image,
                 name_source=name_source, name_target=name_target,
                 score_source=score_source,
                 score_source_org=score_source_org,
-                score_target=score_target)
-
+                score_target=score_target,
+                time=time,
+                show_image=show_image,
+                image_path=image_path)
     # Print some statistics for the noise.
-    msg = "Noise min: {0:.3f}, max: {1:.3f}, mean: {2:.3f}, std: {3:.3f}"
-    print(msg.format(noise.min(), noise.max(),
-                     noise.mean(), noise.std()))
+    msg = "Noise min: {0:.3f}, max: {1:.3f}, mean: {2:.3f}, std: {3:.3f}, total iterations: {4}\n"
+    result_file.write(msg.format(noise.min(), noise.max(),
+                     noise.mean(), noise.std(), iterations))
 
 tf.__version__
 inception.data_dir = 'inception/'
 
+# TODO: retrain inception
 inception.maybe_download()
 model = inception.Inception()
 resized_image = model.resized_image
@@ -268,11 +281,22 @@ with model.graph.as_default():
     gradient = tf.gradients(loss, resized_image)
 
 session = tf.Session(graph=model.graph)
+time = datetime.datetime.now().strftime('%m%d%H%M%S')
+os.mkdir(time)
+image_dir = 'images/'
+log_file = open(time + '/log.txt','w') 
+result_file = open(time + '/result.txt','w') 
 
-image_path = "images/parrot_cropped1.jpg"
+for image in os.listdir(image_dir):
+    if image.endswith(".jpg"):
 
-adversary_example(image_path=image_path,
-                  cls_target=300,
-                  noise_limit=3.0,
-                  required_score=0.99)
-
+        adversary_example(image_path=image_dir + image,
+            cls_target=300,
+            noise_limit=3.0,
+            required_score=0.99,
+            log_file=log_file,
+            result_file=result_file,
+            time=time,
+            show_image=False)
+log_file.close()
+result_file.close()
