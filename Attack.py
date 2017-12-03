@@ -49,14 +49,8 @@ noise_limit=3.0
 required_score=0.99
 show_image=False
 
+result_file = open('workfile', 'w')
 
-# In[ ]:
-
-
-loss
-
-
-# In[ ]:
 
 
 def normalize_image(x):
@@ -341,7 +335,7 @@ def bit_compression_run():
 
                 #l2_norm = np.linalg.norm(noise)/np.linalg.norm(image)
                 l2_norm = math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))
-                print ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
+                f.write('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
 
                 # If the score for the target-class is not high enough.
                 if index < len(threshold):
@@ -382,16 +376,16 @@ def bit_compression_run():
                             index += 10
 
                 else:  
-                    print(success1)
-                    print(success2)
-                    print(success3)
-                    print(precision1)
-                    print(precision2)
-                    print(precision3)
+                    f.write(success1)
+                    f.write(success2)
+                    f.write(success3)
+                    f.write(precision1)
+                    f.write(precision2)
+                    f.write(precision3)
 
                     break;
 
-            print("finished image ")
+            f.write("finished image ")
 
 
 
@@ -500,7 +494,7 @@ def kmean_with_16_centroids_run():
 
                 #l2_norm = np.linalg.norm(noise)/np.linalg.norm(image)
                 l2_norm = math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))
-                print ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/max(1e-80, np.linalg.norm(image)))))
+                f.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/max(1e-80, np.linalg.norm(image)))))
 
                 # If the score for the target-class is not high enough.
                 if index < len(threshold):
@@ -534,10 +528,11 @@ def kmean_with_16_centroids_run():
                             index += 10
 
                 else:  
-                    print(success)
+                    f.write(success)
+                    f.write(precisio3)
                     break;
 
-            print("finished image ")
+            f.write("finished image ")
 
 
         #print("limit", l2_limit, "successful rate is ", success/total)
@@ -648,7 +643,7 @@ def spatial_smoothing_run():
 
                 #l2_norm = np.linalg.norm(noise)/np.linalg.norm(image)
                 l2_norm = math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))
-                print ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
+                f.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
 
                 # If the score for the target-class is not high enough.
                 if index < len(threshold):
@@ -682,11 +677,11 @@ def spatial_smoothing_run():
                             index += 10
 
                 else:  
-                    print(success)
-                    print(precision)
+                    f.write(success)
+                    f.write(precision)
                     break;
 
-            print("finished image ")
+            f.write("finished image ")
 
 
         #print("limit", l2_limit, "successful rate is ", success/total)
@@ -805,7 +800,7 @@ def bit_compression_with_iterative_FGSM_run():
 
                 #l2_norm = np.linalg.norm(noise)/np.linalg.norm(image)
                 l2_norm = math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))
-                print ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
+                f.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
 
                 # If the score for the target-class is not high enough.
                 if index < len(threshold):
@@ -850,16 +845,16 @@ def bit_compression_with_iterative_FGSM_run():
                             index += 10
 
                 else:  
-                    print(success1)
-                    print(success2)
-                    print(success3)
-                    print(precision1)
-                    print(precision2)
-                    print(precision3)
+                    f.write(success1)
+                    f.write(success2)
+                    f.write(success3)
+                    f.write(precision1)
+                    f.write(precision2)
+                    f.write(precision3)
 
                     break;
 
-            print("finished image ")
+            f.write("finished image ")
 
 
 
@@ -870,4 +865,5 @@ bit_compression_run()
 #kmean_with_16_centroids_run()
 #spatial_smoothing_run()
 #bit_compression_with_iterative_FGSM_run()
+f.close()
 
