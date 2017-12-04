@@ -228,6 +228,7 @@ def spatial_smoothing(image, m, n):
 
 
 def bit_compression_run():
+        f.write("bit compression with FGSM")
         #Experiment on bit compression
         total = len(images)
         success1 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
@@ -394,6 +395,7 @@ def bit_compression_run():
 
 def kmean_with_16_centroids_run():
         # Kmean with 16 centroids
+        f.write("k-means with FGSM")
         total = len(images)
         success = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
@@ -543,6 +545,7 @@ def kmean_with_16_centroids_run():
 
 def spatial_smoothing_run():
         # Spatial smoothing
+        f.write("spatial smoothing with FGSM")
         total = len(images)
         success = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
@@ -688,19 +691,12 @@ def spatial_smoothing_run():
 
 
 # In[ ]:
-
-
-def bit_compression_with_iterative_FGSM_run():
-        #Experiment on bit compression, with iterative FGSM
+def total_variance_run():
+        # Spatial smoothing
+        f.write("tv smoothing with FGSM")
         total = len(images)
-        success1 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
-        success2 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
-        success3 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
-        # If it remained in same class
-        precision1 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
-        precision2 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
-        precision3 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
-
+        success = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
+        precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         threshold = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
         for image in images:
             feed_dict = model._create_feed_dict(image_path=image)
@@ -785,9 +781,163 @@ def bit_compression_with_iterative_FGSM_run():
                 # This ensures that at least one pixel colour is changed by 7.
                 # Recall that pixel colours can have 255 different values.
                 # This step-size was found to give fast convergence.
+                step_size = 1. / grad_absmax
+
+
+                '''
+                l2_disturb = np.linalg.norm(noise)/np.linalg.norm(image)
+
+                step_size = 0.1 / max(0.00001, math.sqrt(l2_disturb))
+                '''
+
+                test_precision(iterations, (image + noise)[0])
+
+                #l2_norm = np.linalg.norm(noise)/np.linalg.norm(image)
+                l2_norm = math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))
+                f.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
+
+                # If the score for the target-class is not high enough.
+                if index < len(threshold):
+                #if score_target < required_score and index < len(threshold):
+                    # Update the image-noise by subtracting the gradient
+                    # scaled by the step-size.
+                    noise -= step_size * grad
+
+                    # Ensure the noise is within the desired range.
+                    # This avoids distorting the image too much.
+                    noise = np.clip(a=noise,
+                                    a_min=-noise_limit,
+                                    a_max=noise_limit)
+                    '''
+                    if (iterations % 10 == 0):
+                        print("Print defense effect")
+                        # Chose whatever defense method you want to use on the bottom.
+                        test_precision(iterations, spatial_smoothing((image + noise)[0], 3, 3))
+                    '''
+
+                    if l2_norm >= threshold[index]:
+                        #print("inside while loop")
+                        # Abort the optimization because the score is high enough.
+                        x1, x2 = test_precision(iterations, tv_compress((image + noise)[0]))
+                        success[index] += x1
+                        precision[index] += x2    
+                        if(x1==1):
+                            #print("index is ", index)
+                            index += 1
+                        else:
+                            index += 10
+
+                else:  
+                    f.write(success)
+                    f.write(precision)
+                    break;
+
+            f.write("finished image ")
+
+
+        #print("limit", l2_limit, "successful rate is ", success/total)
+
+
+
+def bit_compression_with_iterative_FGSM_run():
+        f.write("bit compression with I-FGSM")
+        #Experiment on bit compression, with iterative FGSM
+        total = len(images)
+        success1 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
+        success2 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
+        success3 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
+        # If it remained in same class
+        precision1 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
+        precision2 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
+        precision3 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
+
+        threshold = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
+        for image in images:
+            feed_dict = model._create_feed_dict(image_path=image)
+
+            #image = img[100]
+            #image_path= 'cifar/'
+            #feed_dict = model._create_feed_dict(image=image)
+
+
+
+            pred, image = session.run([y_pred, resized_image],
+                                          feed_dict=feed_dict)
+
+
+
+
+            cls_source = np.argmax(pred)
+            cls_target = 300
+
+            # Score for the predicted class (aka. probability or confidence).
+            score_source_org = pred.max()
+
+            # Names for the source and target classes.
+            name_source = model.name_lookup.cls_to_name(cls_source,
+                                                        only_first_name=True)
+            name_target = model.name_lookup.cls_to_name(cls_target,
+                                                        only_first_name=True)
+
+            # Initialize the noise to zero.
+            noise = 0
+            iterations = 0
+            # Perform a number of optimization iterations to find
+            # the noise that causes mis-classification of the input image.
+            index = 0
+            for i in range(50000):
+                iterations = i
+
+                # The noisy image is just the sum of the input image and noise.
+                noisy_image = image + noise
+
+                # Ensure the pixel-values of the noisy image are between
+                # 0 and 255 like a real image. If we allowed pixel-values
+                # outside this range then maybe the mis-classification would
+                # be due to this 'illegal' input breaking the Inception model.
+                noisy_image = np.clip(a=noisy_image, a_min=0.0, a_max=255.0)
+
+                # Create a feed-dict. This feeds the noisy image to the
+                # tensor in the graph that holds the resized image, because
+                # this is the final stage for inputting raw image data.
+                # This also feeds the target class-number that we desire.
+                feed_dict = {model.tensor_name_resized_image: noisy_image,
+                             pl_cls_target: cls_target}
+
+                # Calculate the predicted class-scores as well as the gradient.
+                pred, grad = session.run([y_pred, gradient],
+                                         feed_dict=feed_dict)
+
+                # Convert the predicted class-scores to a one-dim array.
+                pred = np.squeeze(pred)
+
+                # The scores (probabilities) for the source and target classes.
+                score_source = pred[cls_source]
+                score_target = pred[cls_target]
+
+                # Squeeze the dimensionality for the gradient-array.
+                grad = np.array(grad).squeeze()
+
+                # The gradient now tells us how much we need to change the
+                # noisy input image in order to move the predicted class
+                # closer to the desired target-class.
+
+                # Calculate the max of the absolute gradient values.
+                # This is used to calculate the step-size.
+                grad_absmax = np.abs(grad).max()
+
+                # If the gradient is very small then use a lower limit,
+                # because we will use it as a divisor.
+                if grad_absmax < 1e-10:
+                    grad_absmax = 1e-10
+
+                # Calculate the step-size for updating the image-noise.
+                # This ensures that at least one pixel colour is changed by 7.
+                # Recall that pixel colours can have 255 different values.
+                # This step-size was found to give fast convergence.
 
                 # Iterative FGSM goes smaller steps, but more steps
-                step_size = 0.3 / grad_absmax
+                step_size = 0.2 / grad_absmax
 
 
                 '''
@@ -860,6 +1010,457 @@ def bit_compression_with_iterative_FGSM_run():
 
 # In[ ]:
 
+def kmean_with_16_centroids_run_with_I_FGSM():
+        f.write("k-means compress with I-FGSM")
+        # Kmean with 16 centroids
+        total = len(images)
+        success = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
+        precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
+        threshold = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
+        for image in images:
+            feed_dict = model._create_feed_dict(image_path=image)
+
+            #image = img[100]
+            #image_path= 'cifar/'
+            #feed_dict = model._create_feed_dict(image=image)
+
+
+
+            pred, image = session.run([y_pred, resized_image],
+                                          feed_dict=feed_dict)
+
+
+
+
+            cls_source = np.argmax(pred)
+            cls_target = 300
+
+            # Score for the predicted class (aka. probability or confidence).
+            score_source_org = pred.max()
+
+            # Names for the source and target classes.
+            name_source = model.name_lookup.cls_to_name(cls_source,
+                                                        only_first_name=True)
+            name_target = model.name_lookup.cls_to_name(cls_target,
+                                                        only_first_name=True)
+
+            # Initialize the noise to zero.
+            noise = 0
+            iterations = 0
+            # Perform a number of optimization iterations to find
+            # the noise that causes mis-classification of the input image.
+            index = 0
+            for i in range(50000):
+                iterations = i
+
+                # The noisy image is just the sum of the input image and noise.
+                noisy_image = image + noise
+
+                # Ensure the pixel-values of the noisy image are between
+                # 0 and 255 like a real image. If we allowed pixel-values
+                # outside this range then maybe the mis-classification would
+                # be due to this 'illegal' input breaking the Inception model.
+                noisy_image = np.clip(a=noisy_image, a_min=0.0, a_max=255.0)
+
+                # Create a feed-dict. This feeds the noisy image to the
+                # tensor in the graph that holds the resized image, because
+                # this is the final stage for inputting raw image data.
+                # This also feeds the target class-number that we desire.
+                feed_dict = {model.tensor_name_resized_image: noisy_image,
+                             pl_cls_target: cls_target}
+
+                # Calculate the predicted class-scores as well as the gradient.
+                pred, grad = session.run([y_pred, gradient],
+                                         feed_dict=feed_dict)
+
+                # Convert the predicted class-scores to a one-dim array.
+                pred = np.squeeze(pred)
+
+                # The scores (probabilities) for the source and target classes.
+                score_source = pred[cls_source]
+                score_target = pred[cls_target]
+
+                # Squeeze the dimensionality for the gradient-array.
+                grad = np.array(grad).squeeze()
+
+                # The gradient now tells us how much we need to change the
+                # noisy input image in order to move the predicted class
+                # closer to the desired target-class.
+
+                # Calculate the max of the absolute gradient values.
+                # This is used to calculate the step-size.
+                grad_absmax = np.abs(grad).max()
+
+                # If the gradient is very small then use a lower limit,
+                # because we will use it as a divisor.
+                if grad_absmax < 1e-10:
+                    grad_absmax = 1e-10
+
+                # Calculate the step-size for updating the image-noise.
+                # This ensures that at least one pixel colour is changed by 7.
+                # Recall that pixel colours can have 255 different values.
+                # This step-size was found to give fast convergence.
+                step_size = 0.2 / grad_absmax
+
+
+                '''
+                l2_disturb = np.linalg.norm(noise)/np.linalg.norm(image)
+
+                step_size = 0.1 / max(0.00001, math.sqrt(l2_disturb))
+                '''
+
+                test_precision(iterations, (image + noise)[0])
+
+                #l2_norm = np.linalg.norm(noise)/np.linalg.norm(image)
+                l2_norm = math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))
+                f.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/max(1e-80, np.linalg.norm(image)))))
+
+                # If the score for the target-class is not high enough.
+                if index < len(threshold):
+                #if score_target < required_score and index < len(threshold):
+                    # Update the image-noise by subtracting the gradient
+                    # scaled by the step-size.
+                    noise -= step_size * grad
+
+                    # Ensure the noise is within the desired range.
+                    # This avoids distorting the image too much.
+                    noise = np.clip(a=noise,
+                                    a_min=-noise_limit,
+                                    a_max=noise_limit)
+                    '''
+                    if (iterations % 10 == 0):
+                        print("Print defense effect")
+                        # Chose whatever defense method you want to use on the bottom.
+                        test_precision(iterations, spatial_smoothing((image + noise)[0], 3, 3))
+                    '''
+
+                    if i%5!=0:
+                        continue;
+
+                    if l2_norm >= threshold[index]:
+                        #print("inside while loop")
+                        # Abort the optimization because the score is high enough.
+                        x1, x2 = test_precision(iterations, kmeans_compress((image + noise)[0]))
+                        success[index] += x1
+                        precision[index] += x2    
+                        if(x1==1):
+                            #print("index is ", index)
+                            index += 1
+                        else:
+                            index += 10
+
+                else:  
+                    f.write(success)
+                    f.write(precisio3)
+                    break;
+
+            f.write("finished image ")
+
+
+        #print("limit", l2_limit, "successful rate is ", success/total)
+
+
+# In[ ]:
+
+
+def spatial_smoothing_run_with_I_FGSM():
+        f.write("spatial smoothing with I-FGSM")
+        # Spatial smoothing
+        total = len(images)
+        success = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
+        precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
+        threshold = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
+        for image in images:
+            feed_dict = model._create_feed_dict(image_path=image)
+
+            #image = img[100]
+            #image_path= 'cifar/'
+            #feed_dict = model._create_feed_dict(image=image)
+
+
+
+            pred, image = session.run([y_pred, resized_image],
+                                          feed_dict=feed_dict)
+
+
+
+
+            cls_source = np.argmax(pred)
+            cls_target = 300
+
+            # Score for the predicted class (aka. probability or confidence).
+            score_source_org = pred.max()
+
+            # Names for the source and target classes.
+            name_source = model.name_lookup.cls_to_name(cls_source,
+                                                        only_first_name=True)
+            name_target = model.name_lookup.cls_to_name(cls_target,
+                                                        only_first_name=True)
+
+            # Initialize the noise to zero.
+            noise = 0
+            iterations = 0
+            # Perform a number of optimization iterations to find
+            # the noise that causes mis-classification of the input image.
+            index = 0
+            for i in range(50000):
+                iterations = i
+
+                # The noisy image is just the sum of the input image and noise.
+                noisy_image = image + noise
+
+                # Ensure the pixel-values of the noisy image are between
+                # 0 and 255 like a real image. If we allowed pixel-values
+                # outside this range then maybe the mis-classification would
+                # be due to this 'illegal' input breaking the Inception model.
+                noisy_image = np.clip(a=noisy_image, a_min=0.0, a_max=255.0)
+
+                # Create a feed-dict. This feeds the noisy image to the
+                # tensor in the graph that holds the resized image, because
+                # this is the final stage for inputting raw image data.
+                # This also feeds the target class-number that we desire.
+                feed_dict = {model.tensor_name_resized_image: noisy_image,
+                             pl_cls_target: cls_target}
+
+                # Calculate the predicted class-scores as well as the gradient.
+                pred, grad = session.run([y_pred, gradient],
+                                         feed_dict=feed_dict)
+
+                # Convert the predicted class-scores to a one-dim array.
+                pred = np.squeeze(pred)
+
+                # The scores (probabilities) for the source and target classes.
+                score_source = pred[cls_source]
+                score_target = pred[cls_target]
+
+                # Squeeze the dimensionality for the gradient-array.
+                grad = np.array(grad).squeeze()
+
+                # The gradient now tells us how much we need to change the
+                # noisy input image in order to move the predicted class
+                # closer to the desired target-class.
+
+                # Calculate the max of the absolute gradient values.
+                # This is used to calculate the step-size.
+                grad_absmax = np.abs(grad).max()
+
+                # If the gradient is very small then use a lower limit,
+                # because we will use it as a divisor.
+                if grad_absmax < 1e-10:
+                    grad_absmax = 1e-10
+
+                # Calculate the step-size for updating the image-noise.
+                # This ensures that at least one pixel colour is changed by 7.
+                # Recall that pixel colours can have 255 different values.
+                # This step-size was found to give fast convergence.
+                step_size = 0.2 / grad_absmax
+
+
+                '''
+                l2_disturb = np.linalg.norm(noise)/np.linalg.norm(image)
+
+                step_size = 0.1 / max(0.00001, math.sqrt(l2_disturb))
+                '''
+
+                test_precision(iterations, (image + noise)[0])
+
+                #l2_norm = np.linalg.norm(noise)/np.linalg.norm(image)
+                l2_norm = math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))
+                f.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
+
+                # If the score for the target-class is not high enough.
+                if index < len(threshold):
+                #if score_target < required_score and index < len(threshold):
+                    # Update the image-noise by subtracting the gradient
+                    # scaled by the step-size.
+                    noise -= step_size * grad
+
+                    # Ensure the noise is within the desired range.
+                    # This avoids distorting the image too much.
+                    noise = np.clip(a=noise,
+                                    a_min=-noise_limit,
+                                    a_max=noise_limit)
+                    '''
+                    if (iterations % 10 == 0):
+                        print("Print defense effect")
+                        # Chose whatever defense method you want to use on the bottom.
+                        test_precision(iterations, spatial_smoothing((image + noise)[0], 3, 3))
+                    '''
+
+                    if i%5!=0:
+                        continue;
+
+                    if l2_norm >= threshold[index]:
+                        #print("inside while loop")
+                        # Abort the optimization because the score is high enough.
+                        x1, x2 = test_precision(iterations, kmeans_compress((image + noise)[0]))
+                        success[index] += x1
+                        precision[index] += x2    
+                        if(x1==1):
+                            #print("index is ", index)
+                            index += 1
+                        else:
+                            index += 10
+
+                else:  
+                    f.write(success)
+                    f.write(precision)
+                    break;
+
+            f.write("finished image ")
+
+
+        #print("limit", l2_limit, "successful rate is ", success/total)
+
+
+def total_variance_run_with_I_FGSM():
+        # Spatial smoothing
+        f.write("TV smoothing with I-FGSM")
+        total = len(images)
+        success = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
+        precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
+        threshold = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
+        for image in images:
+            feed_dict = model._create_feed_dict(image_path=image)
+
+            #image = img[100]
+            #image_path= 'cifar/'
+            #feed_dict = model._create_feed_dict(image=image)
+
+
+
+            pred, image = session.run([y_pred, resized_image],
+                                          feed_dict=feed_dict)
+
+
+
+
+            cls_source = np.argmax(pred)
+            cls_target = 300
+
+            # Score for the predicted class (aka. probability or confidence).
+            score_source_org = pred.max()
+
+            # Names for the source and target classes.
+            name_source = model.name_lookup.cls_to_name(cls_source,
+                                                        only_first_name=True)
+            name_target = model.name_lookup.cls_to_name(cls_target,
+                                                        only_first_name=True)
+
+            # Initialize the noise to zero.
+            noise = 0
+            iterations = 0
+            # Perform a number of optimization iterations to find
+            # the noise that causes mis-classification of the input image.
+            index = 0
+            for i in range(50000):
+                iterations = i
+
+                # The noisy image is just the sum of the input image and noise.
+                noisy_image = image + noise
+
+                # Ensure the pixel-values of the noisy image are between
+                # 0 and 255 like a real image. If we allowed pixel-values
+                # outside this range then maybe the mis-classification would
+                # be due to this 'illegal' input breaking the Inception model.
+                noisy_image = np.clip(a=noisy_image, a_min=0.0, a_max=255.0)
+
+                # Create a feed-dict. This feeds the noisy image to the
+                # tensor in the graph that holds the resized image, because
+                # this is the final stage for inputting raw image data.
+                # This also feeds the target class-number that we desire.
+                feed_dict = {model.tensor_name_resized_image: noisy_image,
+                             pl_cls_target: cls_target}
+
+                # Calculate the predicted class-scores as well as the gradient.
+                pred, grad = session.run([y_pred, gradient],
+                                         feed_dict=feed_dict)
+
+                # Convert the predicted class-scores to a one-dim array.
+                pred = np.squeeze(pred)
+
+                # The scores (probabilities) for the source and target classes.
+                score_source = pred[cls_source]
+                score_target = pred[cls_target]
+
+                # Squeeze the dimensionality for the gradient-array.
+                grad = np.array(grad).squeeze()
+
+                # The gradient now tells us how much we need to change the
+                # noisy input image in order to move the predicted class
+                # closer to the desired target-class.
+
+                # Calculate the max of the absolute gradient values.
+                # This is used to calculate the step-size.
+                grad_absmax = np.abs(grad).max()
+
+                # If the gradient is very small then use a lower limit,
+                # because we will use it as a divisor.
+                if grad_absmax < 1e-10:
+                    grad_absmax = 1e-10
+
+                # Calculate the step-size for updating the image-noise.
+                # This ensures that at least one pixel colour is changed by 7.
+                # Recall that pixel colours can have 255 different values.
+                # This step-size was found to give fast convergence.
+                step_size = 0.2 / grad_absmax
+
+
+                '''
+                l2_disturb = np.linalg.norm(noise)/np.linalg.norm(image)
+
+                step_size = 0.1 / max(0.00001, math.sqrt(l2_disturb))
+                '''
+
+                test_precision(iterations, (image + noise)[0])
+
+                #l2_norm = np.linalg.norm(noise)/np.linalg.norm(image)
+                l2_norm = math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))
+                f.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
+
+                # If the score for the target-class is not high enough.
+                if index < len(threshold):
+                #if score_target < required_score and index < len(threshold):
+                    # Update the image-noise by subtracting the gradient
+                    # scaled by the step-size.
+                    noise -= step_size * grad
+
+                    # Ensure the noise is within the desired range.
+                    # This avoids distorting the image too much.
+                    noise = np.clip(a=noise,
+                                    a_min=-noise_limit,
+                                    a_max=noise_limit)
+                    '''
+                    if (iterations % 10 == 0):
+                        print("Print defense effect")
+                        # Chose whatever defense method you want to use on the bottom.
+                        test_precision(iterations, spatial_smoothing((image + noise)[0], 3, 3))
+                    '''
+                    if i%5!=0:
+                        continue;
+
+
+                    if l2_norm >= threshold[index]:
+                        #print("inside while loop")
+                        # Abort the optimization because the score is high enough.
+                        x1, x2 = test_precision(iterations, tv_compress((image + noise)[0]))
+                        success[index] += x1
+                        precision[index] += x2    
+                        if(x1==1):
+                            #print("index is ", index)
+                            index += 1
+                        else:
+                            index += 10
+
+                else:  
+                    f.write(success)
+                    f.write(precision)
+                    break;
+
+            f.write("finished image ")
+
+
+        #print("limit", l2_limit, "successful rate is ", success/total)
 
 bit_compression_run()
 #kmean_with_16_centroids_run()
