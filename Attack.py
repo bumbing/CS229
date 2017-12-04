@@ -49,7 +49,7 @@ noise_limit=3.0
 required_score=0.99
 show_image=False
 
-result_file = open('workfile', 'w')
+result_file = open('result.txt', 'w')
 
 
 
@@ -228,7 +228,7 @@ def spatial_smoothing(image, m, n):
 
 
 def bit_compression_run():
-        f.write("bit compression with FGSM")
+        result_file.write("bit compression with FGSM")
         #Experiment on bit compression
         total = len(images)
         success1 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
@@ -336,7 +336,7 @@ def bit_compression_run():
 
                 #l2_norm = np.linalg.norm(noise)/np.linalg.norm(image)
                 l2_norm = math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))
-                f.write('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
+                result_file.write('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
 
                 # If the score for the target-class is not high enough.
                 if index < len(threshold):
@@ -377,16 +377,16 @@ def bit_compression_run():
                             index += 10
 
                 else:  
-                    f.write(success1)
-                    f.write(success2)
-                    f.write(success3)
-                    f.write(precision1)
-                    f.write(precision2)
-                    f.write(precision3)
+                    result_file.write(success1)
+                    result_file.write(success2)
+                    result_file.write(success3)
+                    result_file.write(precision1)
+                    result_file.write(precision2)
+                    result_file.write(precision3)
 
                     break;
 
-            f.write("finished image ")
+            result_file.write("finished image ")
 
 
 
@@ -395,7 +395,7 @@ def bit_compression_run():
 
 def kmean_with_16_centroids_run():
         # Kmean with 16 centroids
-        f.write("k-means with FGSM")
+        result_file.write("k-means with FGSM")
         total = len(images)
         success = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
@@ -496,7 +496,7 @@ def kmean_with_16_centroids_run():
 
                 #l2_norm = np.linalg.norm(noise)/np.linalg.norm(image)
                 l2_norm = math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))
-                f.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/max(1e-80, np.linalg.norm(image)))))
+                result_file.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/max(1e-80, np.linalg.norm(image)))))
 
                 # If the score for the target-class is not high enough.
                 if index < len(threshold):
@@ -530,11 +530,11 @@ def kmean_with_16_centroids_run():
                             index += 10
 
                 else:  
-                    f.write(success)
-                    f.write(precisio3)
+                    result_file.write(success)
+                    result_file.write(precisio)
                     break;
 
-            f.write("finished image ")
+            result_file.write("finished image ")
 
 
         #print("limit", l2_limit, "successful rate is ", success/total)
@@ -545,7 +545,7 @@ def kmean_with_16_centroids_run():
 
 def spatial_smoothing_run():
         # Spatial smoothing
-        f.write("spatial smoothing with FGSM")
+        result_file.write("spatial smoothing with FGSM")
         total = len(images)
         success = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
@@ -646,7 +646,7 @@ def spatial_smoothing_run():
 
                 #l2_norm = np.linalg.norm(noise)/np.linalg.norm(image)
                 l2_norm = math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))
-                f.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
+                result_file.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
 
                 # If the score for the target-class is not high enough.
                 if index < len(threshold):
@@ -680,11 +680,11 @@ def spatial_smoothing_run():
                             index += 10
 
                 else:  
-                    f.write(success)
-                    f.write(precision)
+                    result_file.write(success)
+                    result_file.write(precision)
                     break;
 
-            f.write("finished image ")
+            result_file.write("finished image ")
 
 
         #print("limit", l2_limit, "successful rate is ", success/total)
@@ -693,7 +693,7 @@ def spatial_smoothing_run():
 # In[ ]:
 def total_variance_run():
         # Spatial smoothing
-        f.write("tv smoothing with FGSM")
+        result_file.write("tv smoothing with FGSM")
         total = len(images)
         success = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
@@ -794,7 +794,7 @@ def total_variance_run():
 
                 #l2_norm = np.linalg.norm(noise)/np.linalg.norm(image)
                 l2_norm = math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))
-                f.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
+                result_file.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
 
                 # If the score for the target-class is not high enough.
                 if index < len(threshold):
@@ -828,11 +828,11 @@ def total_variance_run():
                             index += 10
 
                 else:  
-                    f.write(success)
-                    f.write(precision)
+                    result_file.write(success)
+                    result_file.write(precision)
                     break;
 
-            f.write("finished image ")
+            result_file.write("finished image ")
 
 
         #print("limit", l2_limit, "successful rate is ", success/total)
@@ -840,7 +840,7 @@ def total_variance_run():
 
 
 def bit_compression_with_iterative_FGSM_run():
-        f.write("bit compression with I-FGSM")
+        result_file.write("bit compression with I-FGSM")
         #Experiment on bit compression, with iterative FGSM
         total = len(images)
         success1 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
@@ -950,7 +950,7 @@ def bit_compression_with_iterative_FGSM_run():
 
                 #l2_norm = np.linalg.norm(noise)/np.linalg.norm(image)
                 l2_norm = math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))
-                f.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
+                result_file.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
 
                 # If the score for the target-class is not high enough.
                 if index < len(threshold):
@@ -995,23 +995,23 @@ def bit_compression_with_iterative_FGSM_run():
                             index += 10
 
                 else:  
-                    f.write(success1)
-                    f.write(success2)
-                    f.write(success3)
-                    f.write(precision1)
-                    f.write(precision2)
-                    f.write(precision3)
+                    result_file.write(success1)
+                    result_file.write(success2)
+                    result_file.write(success3)
+                    result_file.write(precision1)
+                    result_file.write(precision2)
+                    result_file.write(precision3)
 
                     break;
 
-            f.write("finished image ")
+            result_file.write("finished image ")
 
 
 
 # In[ ]:
 
 def kmean_with_16_centroids_run_with_I_FGSM():
-        f.write("k-means compress with I-FGSM")
+        result_file.write("k-means compress with I-FGSM")
         # Kmean with 16 centroids
         total = len(images)
         success = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
@@ -1113,7 +1113,7 @@ def kmean_with_16_centroids_run_with_I_FGSM():
 
                 #l2_norm = np.linalg.norm(noise)/np.linalg.norm(image)
                 l2_norm = math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))
-                f.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/max(1e-80, np.linalg.norm(image)))))
+                result_file.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/max(1e-80, np.linalg.norm(image)))))
 
                 # If the score for the target-class is not high enough.
                 if index < len(threshold):
@@ -1150,11 +1150,11 @@ def kmean_with_16_centroids_run_with_I_FGSM():
                             index += 10
 
                 else:  
-                    f.write(success)
-                    f.write(precisio3)
+                    result_file.write(success)
+                    result_file.write(precisio)
                     break;
 
-            f.write("finished image ")
+            result_file.write("finished image ")
 
 
         #print("limit", l2_limit, "successful rate is ", success/total)
@@ -1164,7 +1164,7 @@ def kmean_with_16_centroids_run_with_I_FGSM():
 
 
 def spatial_smoothing_run_with_I_FGSM():
-        f.write("spatial smoothing with I-FGSM")
+        result_file.write("spatial smoothing with I-FGSM")
         # Spatial smoothing
         total = len(images)
         success = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
@@ -1266,7 +1266,7 @@ def spatial_smoothing_run_with_I_FGSM():
 
                 #l2_norm = np.linalg.norm(noise)/np.linalg.norm(image)
                 l2_norm = math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))
-                f.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
+                result_file.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
 
                 # If the score for the target-class is not high enough.
                 if index < len(threshold):
@@ -1303,11 +1303,11 @@ def spatial_smoothing_run_with_I_FGSM():
                             index += 10
 
                 else:  
-                    f.write(success)
-                    f.write(precision)
+                    result_file.write(success)
+                    result_file.write(precision)
                     break;
 
-            f.write("finished image ")
+            result_file.write("finished image ")
 
 
         #print("limit", l2_limit, "successful rate is ", success/total)
@@ -1315,7 +1315,7 @@ def spatial_smoothing_run_with_I_FGSM():
 
 def total_variance_run_with_I_FGSM():
         # Spatial smoothing
-        f.write("TV smoothing with I-FGSM")
+        result_file.write("TV smoothing with I-FGSM")
         total = len(images)
         success = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
@@ -1416,7 +1416,7 @@ def total_variance_run_with_I_FGSM():
 
                 #l2_norm = np.linalg.norm(noise)/np.linalg.norm(image)
                 l2_norm = math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))
-                f.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
+                result_file.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
 
                 # If the score for the target-class is not high enough.
                 if index < len(threshold):
@@ -1453,11 +1453,11 @@ def total_variance_run_with_I_FGSM():
                             index += 10
 
                 else:  
-                    f.write(success)
-                    f.write(precision)
+                    result_file.write(success)
+                    result_file.write(precision)
                     break;
 
-            f.write("finished image ")
+            result_file.write("finished image ")
 
 
         #print("limit", l2_limit, "successful rate is ", success/total)
@@ -1466,5 +1466,5 @@ bit_compression_run()
 #kmean_with_16_centroids_run()
 #spatial_smoothing_run()
 #bit_compression_with_iterative_FGSM_run()
-f.close()
+result_file.close()
 
