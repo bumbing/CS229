@@ -1538,8 +1538,8 @@ for i in range(0, len(content)-2, 3):
 runned_file = open('runned.txt', 'w')
 
 #bit_compression_run()
-runned = kmean_with_16_centroids_run()
-#spatial_smoothing_run()
+#runned = kmean_with_16_centroids_run()
+runned = spatial_smoothing_run(runned)
 #runned = spatial_smoothing_run_with_I_FGSM(runned)
 for key, value in runned.items():
     runned_file.write(str(key) + "\n")
