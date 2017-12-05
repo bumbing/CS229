@@ -139,6 +139,7 @@ def kmeans_compress(image):
                 new_means_count[nearest_centroid] += 1
                 new_means[nearest_centroid] += A[i,j,:]
 	# Replace the k-means with new centroids
+        new_means_count[new_means_count==0] = 1
         k_means = np.divide(new_means,np.tile(new_means_count, (3,1)).T)
 
 # (c) Replace large image's all color with the nearest centroid's color
