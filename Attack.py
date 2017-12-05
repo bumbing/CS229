@@ -13,44 +13,7 @@ import math
 import scipy
 import scipy.misc
 import glob
-
-inception.data_dir = 'inception/'
-
-inception.maybe_download()
-model = inception.Inception()
-resized_image = model.resized_image
-y_pred = model.y_pred
-y_logits = model.y_logits
-
-# Set the graph for the Inception model as the default graph,
-# so that all changes inside this with-block are done to that graph.
-with model.graph.as_default():
-    # Add a placeholder variable for the target class-number.
-    # This will be set to e.g. 300 for the 'bookcase' class.
-    pl_cls_target = tf.placeholder(dtype=tf.int32)
-
-    # Add a new loss-function. This is the cross-entropy.
-    # See Tutorial #01 for an explanation of cross-entropy.
-    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=y_logits, labels=[pl_cls_target])
-
-    # Get the gradient for the loss-function with regard to
-    # the resized input image.
-    gradient = tf.gradients(loss, resized_image)
-
-session = tf.Session(graph=model.graph)
-time = datetime.datetime.now().strftime('%m%d%H%M%S')
-
-images = glob.glob("./images/*.JPEG")
-
-# Parameter configs
-cls_target=300
-noise_limit=3.0
-required_score=0.99
-show_image=False
-
-result_file = open('result.txt', 'w')
-
-
+import logging
 
 def normalize_image(x):
     # Get the min and max values for all pixels in the input.
@@ -240,6 +203,7 @@ def bit_compression_run():
 
         threshold = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
         for image in images:
+            result_file.write(str(image) + "\n")
             feed_dict = model._create_feed_dict(image_path=image)
 
             #image = img[100]
@@ -384,6 +348,8 @@ def bit_compression_run():
                     result_file.write(precision3)
 
                     break;
+                result_file.flush()
+                os.fsync(result_file)
 
             result_file.write("finished image ")
 
@@ -394,12 +360,14 @@ def bit_compression_run():
 
 def kmean_with_16_centroids_run():
         # Kmean with 16 centroids
+        result_file = open('kmean_with_16_centroids_run_result.txt', 'w')
         result_file.write("k-means with FGSM")
         total = len(images)
         success = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         threshold = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
         for image in images:
+            result_file.write(str(image) + "\n")
             feed_dict = model._create_feed_dict(image_path=image)
 
             #image = img[100]
@@ -495,7 +463,7 @@ def kmean_with_16_centroids_run():
 
                 #l2_norm = np.linalg.norm(noise)/np.linalg.norm(image)
                 l2_norm = math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))
-                result_file.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/max(1e-80, np.linalg.norm(image)))))
+                result_file.write ('l2 norm is {}\n'.format(math.sqrt(np.linalg.norm(noise)/max(1e-80, np.linalg.norm(image)))))
 
                 # If the score for the target-class is not high enough.
                 if index < len(threshold):
@@ -529,9 +497,11 @@ def kmean_with_16_centroids_run():
                             index += 10
 
                 else:  
-                    result_file.write(success)
-                    result_file.write(precisio)
+                    result_file.write(str(success) + "\n")
+                    result_file.write(str(precision) + "\n")
                     break;
+                result_file.flush()
+                os.fsync(result_file)
 
             result_file.write("finished image ")
 
@@ -551,6 +521,7 @@ def spatial_smoothing_run():
         precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         threshold = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
         for image in images:
+            result_file.write(str(image) + "\n")
             feed_dict = model._create_feed_dict(image_path=image)
 
             #image = img[100]
@@ -683,6 +654,8 @@ def spatial_smoothing_run():
                     result_file.write(str(success) + "\n")
                     result_file.write(str(precision) + "\n")
                     break;
+                result_file.flush()
+                os.fsync(result_file)
 
             result_file.write("finished image \n")
 
@@ -699,6 +672,7 @@ def total_variance_run():
         precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         threshold = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
         for image in images:
+            result_file.write(str(image) + "\n")
             feed_dict = model._create_feed_dict(image_path=image)
 
             #image = img[100]
@@ -831,6 +805,8 @@ def total_variance_run():
                     result_file.write(success)
                     result_file.write(precision)
                     break;
+                result_file.flush()
+                os.fsync(result_file)
 
             result_file.write("finished image ")
 
@@ -853,6 +829,7 @@ def bit_compression_with_iterative_FGSM_run():
 
         threshold = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
         for image in images:
+            result_file.write(str(image) + "\n")
             feed_dict = model._create_feed_dict(image_path=image)
 
             #image = img[100]
@@ -1003,6 +980,8 @@ def bit_compression_with_iterative_FGSM_run():
                     result_file.write(precision3)
 
                     break;
+                result_file.flush()
+                os.fsync(result_file)
 
             result_file.write("finished image ")
 
@@ -1018,6 +997,7 @@ def kmean_with_16_centroids_run_with_I_FGSM():
         precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         threshold = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
         for image in images:
+            result_file.write(str(image) + "\n")
             feed_dict = model._create_feed_dict(image_path=image)
 
             #image = img[100]
@@ -1153,6 +1133,8 @@ def kmean_with_16_centroids_run_with_I_FGSM():
                     result_file.write(success)
                     result_file.write(precisio)
                     break;
+                result_file.flush()
+                os.fsync(result_file)
 
             result_file.write("finished image ")
 
@@ -1172,6 +1154,7 @@ def spatial_smoothing_run_with_I_FGSM():
         precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         threshold = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
         for image in images:
+            result_file.write(str(image) + "\n")
             feed_dict = model._create_feed_dict(image_path=image)
 
             #image = img[100]
@@ -1307,6 +1290,8 @@ def spatial_smoothing_run_with_I_FGSM():
                     result_file.write(str(success) + "\n")
                     result_file.write(str(precision) + "\n")
                     break;
+                result_file.flush()
+                os.fsync(result_file)
 
             result_file.write("finished image \n")
 
@@ -1322,6 +1307,7 @@ def total_variance_run_with_I_FGSM():
         precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         threshold = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
         for image in images:
+            result_file.write(str(image) + "\n")
             feed_dict = model._create_feed_dict(image_path=image)
 
             #image = img[100]
@@ -1457,16 +1443,62 @@ def total_variance_run_with_I_FGSM():
                     result_file.write(success)
                     result_file.write(precision)
                     break;
+                result_file.flush()
+                os.fsync(result_file)
 
             result_file.write("finished image ")
 
 
         #print("limit", l2_limit, "successful rate is ", success/total)
+try:
 
-#bit_compression_run()
-#kmean_with_16_centroids_run()
-#spatial_smoothing_run()
-spatial_smoothing_run_with_I_FGSM()
-#bit_compression_with_iterative_FGSM_run()
-result_file.close()
+    logging.basicConfig(
+        format="%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s",
+        handlers=[
+            logging.FileHandler("{0}.log".format("a")),
+            logging.StreamHandler()
+        ])
+    inception.data_dir = 'inception/'
 
+    inception.maybe_download()
+    model = inception.Inception()
+    resized_image = model.resized_image
+    y_pred = model.y_pred
+    y_logits = model.y_logits
+
+    # Set the graph for the Inception model as the default graph,
+    # so that all changes inside this with-block are done to that graph.
+    with model.graph.as_default():
+        # Add a placeholder variable for the target class-number.
+        # This will be set to e.g. 300 for the 'bookcase' class.
+        pl_cls_target = tf.placeholder(dtype=tf.int32)
+
+        # Add a new loss-function. This is the cross-entropy.
+        # See Tutorial #01 for an explanation of cross-entropy.
+        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=y_logits, labels=[pl_cls_target])
+
+        # Get the gradient for the loss-function with regard to
+        # the resized input image.
+        gradient = tf.gradients(loss, resized_image)
+
+    session = tf.Session(graph=model.graph)
+    time = datetime.datetime.now().strftime('%m%d%H%M%S')
+
+    images = glob.glob("./images/*.JPEG")
+
+    # Parameter configs
+    cls_target=300
+    noise_limit=3.0
+    required_score=0.99
+    show_image=False
+
+    result_file = open('result.txt', 'w')
+
+    #bit_compression_run()
+    kmean_with_16_centroids_run()
+    #spatial_smoothing_run()
+    #spatial_smoothing_run_with_I_FGSM()
+    #bit_compression_with_iterative_FGSM_run()
+    result_file.close()
+except Exception as e:
+    logging.exception(e)
