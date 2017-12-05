@@ -13,44 +13,7 @@ import math
 import scipy
 import scipy.misc
 import glob
-
-inception.data_dir = 'inception/'
-
-inception.maybe_download()
-model = inception.Inception()
-resized_image = model.resized_image
-y_pred = model.y_pred
-y_logits = model.y_logits
-
-# Set the graph for the Inception model as the default graph,
-# so that all changes inside this with-block are done to that graph.
-with model.graph.as_default():
-    # Add a placeholder variable for the target class-number.
-    # This will be set to e.g. 300 for the 'bookcase' class.
-    pl_cls_target = tf.placeholder(dtype=tf.int32)
-
-    # Add a new loss-function. This is the cross-entropy.
-    # See Tutorial #01 for an explanation of cross-entropy.
-    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=y_logits, labels=[pl_cls_target])
-
-    # Get the gradient for the loss-function with regard to
-    # the resized input image.
-    gradient = tf.gradients(loss, resized_image)
-
-session = tf.Session(graph=model.graph)
-time = datetime.datetime.now().strftime('%m%d%H%M%S')
-
-images = glob.glob("./images/*.JPEG")
-
-# Parameter configs
-cls_target=300
-noise_limit=3.0
-required_score=0.99
-show_image=False
-
-result_file = open('result.txt', 'w')
-
-
+import logging
 
 def normalize_image(x):
     # Get the min and max values for all pixels in the input.
@@ -176,6 +139,7 @@ def kmeans_compress(image):
                 new_means_count[nearest_centroid] += 1
                 new_means[nearest_centroid] += A[i,j,:]
 	# Replace the k-means with new centroids
+        new_means_count[new_means_count==0] = 1
         k_means = np.divide(new_means,np.tile(new_means_count, (3,1)).T)
 
 # (c) Replace large image's all color with the nearest centroid's color
@@ -240,6 +204,7 @@ def bit_compression_run():
 
         threshold = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
         for image in images:
+            result_file.write(str(image) + "\n")
             feed_dict = model._create_feed_dict(image_path=image)
 
             #image = img[100]
@@ -384,6 +349,8 @@ def bit_compression_run():
                     result_file.write(precision3)
 
                     break;
+                result_file.flush()
+                os.fsync(result_file)
 
             result_file.write("finished image ")
 
@@ -394,12 +361,14 @@ def bit_compression_run():
 
 def kmean_with_16_centroids_run():
         # Kmean with 16 centroids
+        result_file = open('kmean_with_16_centroids_run_result.txt', 'w')
         result_file.write("k-means with FGSM")
         total = len(images)
         success = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         threshold = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
         for image in images:
+            result_file.write(str(image) + "\n")
             feed_dict = model._create_feed_dict(image_path=image)
 
             #image = img[100]
@@ -495,7 +464,7 @@ def kmean_with_16_centroids_run():
 
                 #l2_norm = np.linalg.norm(noise)/np.linalg.norm(image)
                 l2_norm = math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))
-                result_file.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/max(1e-80, np.linalg.norm(image)))))
+                result_file.write ('l2 norm is {}\n'.format(math.sqrt(np.linalg.norm(noise)/max(1e-80, np.linalg.norm(image)))))
 
                 # If the score for the target-class is not high enough.
                 if index < len(threshold):
@@ -529,9 +498,11 @@ def kmean_with_16_centroids_run():
                             index += 10
 
                 else:  
-                    result_file.write(success)
-                    result_file.write(precisio)
+                    result_file.write(str(success) + "\n")
+                    result_file.write(str(precision) + "\n")
                     break;
+                result_file.flush()
+                os.fsync(result_file)
 
             result_file.write("finished image ")
 
@@ -544,13 +515,14 @@ def kmean_with_16_centroids_run():
 
 def spatial_smoothing_run():
         # Spatial smoothing
-        result_file = open('spatial_smoothing_run_with_FGSM_result.txt', 'w')
-        result_file.write("spatial smoothing with FGSM")
+        result_file.write("spatial smoothing with FGSM\n")
         total = len(images)
         success = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         threshold = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
+
         for image in images:
+            result_file.write(str(image) + "\n")
             feed_dict = model._create_feed_dict(image_path=image)
 
             #image = img[100]
@@ -683,6 +655,8 @@ def spatial_smoothing_run():
                     result_file.write(str(success) + "\n")
                     result_file.write(str(precision) + "\n")
                     break;
+                result_file.flush()
+                os.fsync(result_file)
 
             result_file.write("finished image \n")
 
@@ -699,6 +673,7 @@ def total_variance_run():
         precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         threshold = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
         for image in images:
+            result_file.write(str(image) + "\n")
             feed_dict = model._create_feed_dict(image_path=image)
 
             #image = img[100]
@@ -831,6 +806,8 @@ def total_variance_run():
                     result_file.write(success)
                     result_file.write(precision)
                     break;
+                result_file.flush()
+                os.fsync(result_file)
 
             result_file.write("finished image ")
 
@@ -853,6 +830,7 @@ def bit_compression_with_iterative_FGSM_run():
 
         threshold = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
         for image in images:
+            result_file.write(str(image) + "\n")
             feed_dict = model._create_feed_dict(image_path=image)
 
             #image = img[100]
@@ -1003,6 +981,8 @@ def bit_compression_with_iterative_FGSM_run():
                     result_file.write(precision3)
 
                     break;
+                result_file.flush()
+                os.fsync(result_file)
 
             result_file.write("finished image ")
 
@@ -1018,6 +998,7 @@ def kmean_with_16_centroids_run_with_I_FGSM():
         precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         threshold = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
         for image in images:
+            result_file.write(str(image) + "\n")
             feed_dict = model._create_feed_dict(image_path=image)
 
             #image = img[100]
@@ -1153,6 +1134,8 @@ def kmean_with_16_centroids_run_with_I_FGSM():
                     result_file.write(success)
                     result_file.write(precisio)
                     break;
+                result_file.flush()
+                os.fsync(result_file)
 
             result_file.write("finished image ")
 
@@ -1163,7 +1146,8 @@ def kmean_with_16_centroids_run_with_I_FGSM():
 # In[ ]:
 
 
-def spatial_smoothing_run_with_I_FGSM():
+def spatial_smoothing_run_with_I_FGSM(runned):
+    try:
         result_file = open('spatial_smoothing_run_with_I_FGSM_result.txt', 'w')
         result_file.write("spatial smoothing with I-FGSM")
         # Spatial smoothing
@@ -1172,6 +1156,14 @@ def spatial_smoothing_run_with_I_FGSM():
         precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         threshold = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
         for image in images:
+            result_file.write(str(image) + "\n")
+            if str(image) in runned:
+                result_file.write("already runned\n")
+                continue
+            image_success = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
+            image_precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
+
+            runned[str(image)] = [image_success, image_precision]
             feed_dict = model._create_feed_dict(image_path=image)
 
             #image = img[100]
@@ -1296,9 +1288,10 @@ def spatial_smoothing_run_with_I_FGSM():
                         # Abort the optimization because the score is high enough.
                         x1, x2 = test_precision(iterations, kmeans_compress((image + noise)[0]), cls_source)
                         success[index] += x1
-                        precision[index] += x2    
+                        precision[index] += x2 
+                        image_success[index] += x1
+                        image_precision[index] += x2  
                         if(x1==1):
-                            #print("index is ", index)
                             index += 1
                         else:
                             index += 10
@@ -1306,13 +1299,17 @@ def spatial_smoothing_run_with_I_FGSM():
                 else:  
                     result_file.write(str(success) + "\n")
                     result_file.write(str(precision) + "\n")
+                    runned[str(image)] = [image_success, image_precision]
                     break;
+                result_file.flush()
+                os.fsync(result_file)
 
             result_file.write("finished image \n")
-
-
         #print("limit", l2_limit, "successful rate is ", success/total)
-
+    except Exception as e:
+        logging.exception(e)
+        return runned
+    return runned
 
 def total_variance_run_with_I_FGSM():
         # Spatial smoothing
@@ -1322,6 +1319,7 @@ def total_variance_run_with_I_FGSM():
         precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         threshold = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
         for image in images:
+            result_file.write(str(image) + "\n")
             feed_dict = model._create_feed_dict(image_path=image)
 
             #image = img[100]
@@ -1457,16 +1455,72 @@ def total_variance_run_with_I_FGSM():
                     result_file.write(success)
                     result_file.write(precision)
                     break;
+                result_file.flush()
+                os.fsync(result_file)
 
             result_file.write("finished image ")
 
 
-        #print("limit", l2_limit, "successful rate is ", success/total)
+logging.basicConfig(
+    format="%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s",
+    handlers=[
+        logging.FileHandler("{0}.log".format("a")),
+        logging.StreamHandler()
+    ])
+inception.data_dir = 'inception/'
+
+inception.maybe_download()
+model = inception.Inception()
+resized_image = model.resized_image
+y_pred = model.y_pred
+y_logits = model.y_logits
+
+# Set the graph for the Inception model as the default graph,
+# so that all changes inside this with-block are done to that graph.
+with model.graph.as_default():
+    # Add a placeholder variable for the target class-number.
+    # This will be set to e.g. 300 for the 'bookcase' class.
+    pl_cls_target = tf.placeholder(dtype=tf.int32)
+
+    # Add a new loss-function. This is the cross-entropy.
+    # See Tutorial #01 for an explanation of cross-entropy.
+    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=y_logits, labels=[pl_cls_target])
+
+    # Get the gradient for the loss-function with regard to
+    # the resized input image.
+    gradient = tf.gradients(loss, resized_image)
+
+session = tf.Session(graph=model.graph)
+time = datetime.datetime.now().strftime('%m%d%H%M%S')
+
+images = glob.glob("./images/*.JPEG")
+
+# Parameter configs
+cls_target=300
+noise_limit=3.0
+required_score=0.99
+show_image=False
+
+result_file = open('result.txt', 'w')
+runned_file = open('runned.txt', 'r')
+content = [line.replace('\n','').replace('[','').replace(']','') for line in runned_file]
+runned_file.close()
+runned = {}
+for i in range(0, len(content)-2, 3):
+    name = content[i]
+    image_success = [float(s) for s in content[i+1].split(',')]
+    image_precision = [float(s) for s in content[i+2].split(',')]
+    runned[name] = [image_success, image_precision]
+runned_file = open('runned.txt', 'w')
 
 #bit_compression_run()
 #kmean_with_16_centroids_run()
 #spatial_smoothing_run()
-spatial_smoothing_run_with_I_FGSM()
+runned = spatial_smoothing_run_with_I_FGSM(runned)
+for key, value in runned.items():
+    runned_file.write(str(key) + "\n")
+    runned_file.write(str(value[0]) + "\n")
+    runned_file.write(str(value[1]) + "\n")
 #bit_compression_with_iterative_FGSM_run()
+runned_file.close()
 result_file.close()
-
