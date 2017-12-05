@@ -223,159 +223,141 @@ def spatial_smoothing(image, m, n):
                 compressed_image[i, j, k] = find_median_in_sliding_windown(image, i, j, k, m, n)
     return compressed_image
 
-    #Experiment on bit compression with Deepfool
-    total = len(images)
-    success1 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
-    success2 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
-    success3 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
-    # If it remained in same class
-    precision1 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
-    precision2 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
-    precision3 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
-    
-    threshold = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
-    for image in images:
-        print (datetime.datetime.now())
-        feed_dict = model._create_feed_dict(image_path=image)
+#Experiment on bit compression with Deepfool
+total = len(images)
+success1 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
+success2 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
+success3 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
+# If it remained in same class
+precision1 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
+precision2 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
+precision3 = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
 
-        #image = img[100]
-        #image_path= 'cifar/'
-        #feed_dict = model._create_feed_dict(image=image)
+threshold = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
+for image in images:
+    print (datetime.datetime.now())
+    feed_dict = model._create_feed_dict(image_path=image)
 
-
-
-        pred, image = session.run([y_pred, resized_image],
-                                      feed_dict=feed_dict)
+    #image = img[100]
+    #image_path= 'cifar/'
+    #feed_dict = model._create_feed_dict(image=image)
 
 
 
-
-        cls_source = np.argmax(pred)
-        cls_target = 300
-
-        # Score for the predicted class (aka. probability or confidence).
-        score_source_org = pred.max()
-
-        # Names for the source and target classes.
-        name_source = model.name_lookup.cls_to_name(cls_source,
-                                                    only_first_name=True)
-        name_target = model.name_lookup.cls_to_name(cls_target,
-                                                    only_first_name=True)
-
-        # Initialize the noise to zero.
-        noise = np.zeros(image[0].shape)
-        iterations = 0
-        # Perform a number of optimization iterations to find
-        # the noise that causes mis-classification of the input image.
-        index = 0
-        
-        # Initailization for classless Deepfool parameters
-        #pert = np.inf
-        #w = np.squeeze(np.zeros(image[1:]))
-        
-        for i in range(10000):
-            iterations = i
-            
-            # The noisy image is just the sum of the input image and noise.
-            noisy_image = image + noise
-
-            # Ensure the pixel-values of the noisy image are between
-            # 0 and 255 like a real image. If we allowed pixel-values
-            # outside this range then maybe the mis-classification would
-            # be due to this 'illegal' input breaking the Inception model.
-            noisy_image = np.clip(a=noisy_image, a_min=0.0, a_max=255.0)
-
-            # Create a feed-dict. This feeds the noisy image to the
-            # tensor in the graph that holds the resized image, because
-            # this is the final stage for inputting raw image data.
-            # This also feeds the target class-number that we desire.
-            feed_dict_source = {model.tensor_name_resized_image: noisy_image,
-                         pl_cls_target: cls_source}
-            
-            feed_dict_target = {model.tensor_name_resized_image: noisy_image,
-                         pl_cls_target: cls_target}
-
-            # Calculate the predicted class-scores as well as the gradient.
-            pred, grad_src = session.run([y_pred, gradient],
-                                     feed_dict=feed_dict_source)
-            pred, grad_tgt = session.run([y_pred, gradient],
-                                     feed_dict=feed_dict_target)
-
-            # Convert the predicted class-scores to a one-dim array.
-            pred = np.squeeze(pred)
-            
-            # The scores (probabilities) for the source and target classes.
-            score_source = pred[cls_source]
-            score_target = pred[cls_target]
-
-            # Squeeze the dimensionality for the gradient-array.
-            w_k = np.array(grad_tgt).squeeze() - np.array(grad_src).squeeze()
-            f_k = score_target - score_source
-            pert_k = (abs(f_k) + 1e-80) * w_k / np.linalg.norm(w_k)
-            #print(pert_k)
-            
-            test_precision(iterations, (image + noise)[0])
-            
-            l2_norm = math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))
-            step_size = 0.02/min(0.01, np.linalg.norm(pert_k)) + l2_norm*l2_norm/0.0001
-            print ('l2 norm is {}'.format(l2_norm))
-
-            # If the score for the target-class is not high enough.
-            if index < len(threshold): 
-                #if score_target < required_score and index < len(threshold):
-                # Update the image-noise by subtracting the gradient
-                # scaled by the step-size.
-                noise += step_size * pert_k
-
-                # Ensure the noise is within the desired range.
-                # This avoids distorting the image too much.
-                noise = np.clip(a=noise,
-                                a_min=-noise_limit,
-                                a_max=noise_limit)
-                '''
-                if (iterations % 10 == 0):
-                    print("Print defense effect")
-                    # Chose whatever defense method you want to use on the bottom.
-                    test_precision(iterations, spatial_smoothing((image + noise)[0], 3, 3))
-                '''
-                
-                if l2_norm >= threshold[index]:
-                    #print("inside while loop")
-                    # Abort the optimization because the score is high enough.
-                    x_1, x_2 = test_precision(iterations, bit_compress((image + noise)[0], 2))
-                    y_1, y_2 = test_precision(iterations, bit_compress((image + noise)[0], 4))
-                    z_1, z_2 = test_precision(iterations, bit_compress((image + noise)[0], 6))
-                    success1[index] += x_1
-                    success2[index] += y_1
-                    success3[index] += z_1    
-                    precision1[index] += x_2
-                    precision2[index] += y_2
-                    precision3[index] += z_2    
-                    
-                    if(x_1!=0 or y_1!=0 or z_1!=0):
-                        #print("index is ", index)
-                        index += 1
-                    else:
-                        index += 10
-                    
-            else:  
-                print(success1)
-                print(success2)
-                print(success3)
-                print(precision1)
-                print(precision2)
-                print(precision3)
-                
-                break;
-                
-        print("finished image ")
+    pred, image = session.run([y_pred, resized_image],
+                                  feed_dict=feed_dict)
 
 
 
 
-bit_compression_run()
-#kmean_with_16_centroids_run()
-#spatial_smoothing_run()
-#bit_compression_with_iterative_FGSM_run()
-result_file.close()
+    cls_source = np.argmax(pred)
+    cls_target = 300
+
+    # Score for the predicted class (aka. probability or confidence).
+    score_source_org = pred.max()
+
+    # Names for the source and target classes.
+    name_source = model.name_lookup.cls_to_name(cls_source,
+                                                only_first_name=True)
+    name_target = model.name_lookup.cls_to_name(cls_target,
+                                                only_first_name=True)
+
+    # Initialize the noise to zero.
+    noise = np.zeros(image[0].shape)
+    iterations = 0
+    # Perform a number of optimization iterations to find
+    # the noise that causes mis-classification of the input image.
+    index = 0
+
+    # Initailization for classless Deepfool parameters
+    #pert = np.inf
+    #w = np.squeeze(np.zeros(image[1:]))
+
+    for i in range(10000):
+        iterations = i
+
+        # The noisy image is just the sum of the input image and noise.
+        noisy_image = image + noise
+
+        # Ensure the pixel-values of the noisy image are between
+        # 0 and 255 like a real image. If we allowed pixel-values
+        # outside this range then maybe the mis-classification would
+        # be due to this 'illegal' input breaking the Inception model.
+        noisy_image = np.clip(a=noisy_image, a_min=0.0, a_max=255.0)
+
+        # Create a feed-dict. This feeds the noisy image to the
+        # tensor in the graph that holds the resized image, because
+        # this is the final stage for inputting raw image data.
+        # This also feeds the target class-number that we desire.
+        feed_dict_source = {model.tensor_name_resized_image: noisy_image,
+                     pl_cls_target: cls_source}
+
+        feed_dict_target = {model.tensor_name_resized_image: noisy_image,
+                     pl_cls_target: cls_target}
+
+        # Calculate the predicted class-scores as well as the gradient.
+        pred, grad_src = session.run([y_pred, gradient],
+                                 feed_dict=feed_dict_source)
+        pred, grad_tgt = session.run([y_pred, gradient],
+                                 feed_dict=feed_dict_target)
+
+        # Convert the predicted class-scores to a one-dim array.
+        pred = np.squeeze(pred)
+
+        # The scores (probabilities) for the source and target classes.
+        score_source = pred[cls_source]
+        score_target = pred[cls_target]
+
+        # Squeeze the dimensionality for the gradient-array.
+        w_k = np.array(grad_tgt).squeeze() - np.array(grad_src).squeeze()
+        f_k = score_target - score_source
+        pert_k = (abs(f_k) + 1e-80) * w_k / np.linalg.norm(w_k)
+        #print(pert_k)
+
+        test_precision(iterations, (image + noise)[0])
+
+        l2_norm = math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))
+        step_size = 0.02/min(0.01, np.linalg.norm(pert_k)) + l2_norm*l2_norm/0.0001
+        print ('l2 norm is {}'.format(l2_norm))
+
+        # If the score for the target-class is not high enough.
+        if index < len(threshold):
+            #if score_target < required_score and index < len(threshold):
+            # Update the image-noise by subtracting the gradient
+            # scaled by the step-size.
+            noise += step_size * pert_k
+
+            # Ensure the noise is within the desired range.
+            # This avoids distorting the image too much.
+            noise = np.clip(a=noise,
+                            a_min=-noise_limit,
+                            a_max=noise_limit)
+            '''
+            if (iterations % 10 == 0):
+                print("Print defense effect")
+                # Chose whatever defense method you want to use on the bottom.
+                test_precision(iterations, spatial_smoothing((image + noise)[0], 3, 3))
+            '''
+
+            if l2_norm >= threshold[index]:
+                #print("inside while loop")
+                # Abort the optimization because the score is high enough.
+                x_1, x_2 = test_precision(iterations, tv_compress((image + noise)[0]))
+                success1[index] += x_1
+                precision1[index] += x_2
+
+                if(x_1!=0):
+                    #print("index is ", index)
+                    index += 1
+                else:
+                    index += 10
+
+        else:
+            print(success1)
+            print(precision1)
+
+            break;
+
+    print("finished image ")
+
 
