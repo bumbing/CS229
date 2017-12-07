@@ -525,7 +525,8 @@ def kmean_with_16_centroids_run(runned):
 # In[ ]:
 
 
-def spatial_smoothing_run():
+def spatial_smoothing_run(runned):
+    try:
         # Spatial smoothing
         result_file.write("spatial smoothing with FGSM\n")
         total = len(images)
@@ -535,6 +536,11 @@ def spatial_smoothing_run():
 
         for image in images:
             result_file.write(str(image) + "\n")
+            if str(image) in runned:
+                result_file.write("already runned\n")
+                continue
+            image_success = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
+            image_precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
             feed_dict = model._create_feed_dict(image_path=image)
 
             #image = img[100]
@@ -656,16 +662,19 @@ def spatial_smoothing_run():
                         # Abort the optimization because the score is high enough.
                         x1, x2 = test_precision(iterations, kmeans_compress((image + noise)[0]), cls_source)
                         success[index] += x1
-                        precision[index] += x2    
+                        precision[index] += x2
+                        image_success[index] += x1
+                        image_precision[index] += x2
                         if(x1==1):
                             #print("index is ", index)
                             index += 1
                         else:
                             index += 10
 
-                else:  
+                else:
                     result_file.write(str(success) + "\n")
                     result_file.write(str(precision) + "\n")
+                    runned[str(image)] = [image_success, image_precision]
                     break;
                 result_file.flush()
                 os.fsync(result_file)
@@ -674,6 +683,10 @@ def spatial_smoothing_run():
 
 
         #print("limit", l2_limit, "successful rate is ", success/total)
+    except Exception as e:
+        logging.exception(e)
+        return runned
+    return runned
 
 
 # In[ ]:
@@ -1002,7 +1015,8 @@ def bit_compression_with_iterative_FGSM_run():
 
 # In[ ]:
 
-def kmean_with_16_centroids_run_with_I_FGSM():
+def kmean_with_16_centroids_run_with_I_FGSM(runned):
+    try:
         result_file.write("k-means compress with I-FGSM")
         # Kmean with 16 centroids
         total = len(images)
@@ -1011,6 +1025,12 @@ def kmean_with_16_centroids_run_with_I_FGSM():
         threshold = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
         for image in images:
             result_file.write(str(image) + "\n")
+            if str(image) in runned:
+                result_file.write("already runned\n")
+                continue
+            image_success = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
+            image_precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
+
             feed_dict = model._create_feed_dict(image_path=image)
 
             #image = img[100]
@@ -1106,7 +1126,7 @@ def kmean_with_16_centroids_run_with_I_FGSM():
 
                 #l2_norm = np.linalg.norm(noise)/np.linalg.norm(image)
                 l2_norm = math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))
-                result_file.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/max(1e-80, np.linalg.norm(image)))))
+                result_file.write ('l2 norm is {}\n'.format(math.sqrt(np.linalg.norm(noise)/max(1e-80, np.linalg.norm(image)))))
 
                 # If the score for the target-class is not high enough.
                 if index < len(threshold):
@@ -1135,25 +1155,31 @@ def kmean_with_16_centroids_run_with_I_FGSM():
                         # Abort the optimization because the score is high enough.
                         x1, x2 = test_precision(iterations, kmeans_compress((image + noise)[0]), cls_source)
                         success[index] += x1
-                        precision[index] += x2    
+                        precision[index] += x2
+                        image_success[index] += x1
+                        image_precision[index] += x2
                         if(x1==1):
                             #print("index is ", index)
                             index += 1
                         else:
                             index += 10
 
-                else:  
-                    result_file.write(success)
-                    result_file.write(precisio)
+                else:
+                    result_file.write(str(success) + "\n")
+                    result_file.write(str(precision) + "\n")
+                    runned[str(image)] = [image_success, image_precision]
                     break;
                 result_file.flush()
                 os.fsync(result_file)
 
-            result_file.write("finished image ")
+            result_file.write("finished image \n")
 
 
         #print("limit", l2_limit, "successful rate is ", success/total)
-
+    except Exception as e:
+        logging.exception(e)
+        return runned
+    return runned
 
 # In[ ]:
 
@@ -1525,8 +1551,9 @@ for i in range(0, len(content)-2, 3):
 runned_file = open('runned.txt', 'w')
 
 #bit_compression_run()
-runned = kmean_with_16_centroids_run()
-#spatial_smoothing_run()
+#runned = kmean_with_16_centroids_run()
+runned = kmean_with_16_centroids_run_with_I_FGSM()
+#runned = spatial_smoothing_run(runned)
 #runned = spatial_smoothing_run_with_I_FGSM(runned)
 for key, value in runned.items():
     runned_file.write(str(key) + "\n")
