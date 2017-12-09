@@ -362,7 +362,6 @@ def bit_compression_run():
 def kmean_with_16_centroids_run(runned):
     try:
         # Kmean with 16 centroids
-        result_file = open('kmean_with_16_centroids_run_result.txt', 'w')
         result_file.write("k-means with FGSM")
         total = len(images)
         success = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
@@ -1551,14 +1550,14 @@ for i in range(0, len(content)-2, 3):
 runned_file = open('runned.txt', 'w')
 
 #bit_compression_run()
-#runned = kmean_with_16_centroids_run()
-runned = kmean_with_16_centroids_run_with_I_FGSM()
+runned = kmean_with_16_centroids_run(runned)
+#runned = kmean_with_16_centroids_run_with_I_FGSM()
 #runned = spatial_smoothing_run(runned)
 #runned = spatial_smoothing_run_with_I_FGSM(runned)
+#bit_compression_with_iterative_FGSM_run()
 for key, value in runned.items():
     runned_file.write(str(key) + "\n")
     runned_file.write(str(value[0]) + "\n")
     runned_file.write(str(value[1]) + "\n")
-#bit_compression_with_iterative_FGSM_run()
 runned_file.close()
 result_file.close()
