@@ -659,7 +659,7 @@ def spatial_smoothing_run(runned):
                     if l2_norm >= threshold[index]:
                         #print("inside while loop")
                         # Abort the optimization because the score is high enough.
-                        x1, x2 = test_precision(iterations, kmeans_compress((image + noise)[0]), cls_source)
+                        x1, x2 = test_precision(iterations, spatial_smoothing((image + noise)[0], 3, 3), cls_source)
                         success[index] += x1
                         precision[index] += x2
                         image_success[index] += x1
@@ -1550,9 +1550,9 @@ for i in range(0, len(content)-2, 3):
 runned_file = open('runned.txt', 'w')
 
 #bit_compression_run()
-runned = kmean_with_16_centroids_run(runned)
+#runned = kmean_with_16_centroids_run(runned)
 #runned = kmean_with_16_centroids_run_with_I_FGSM()
-#runned = spatial_smoothing_run(runned)
+runned = spatial_smoothing_run(runned)
 #runned = spatial_smoothing_run_with_I_FGSM(runned)
 #bit_compression_with_iterative_FGSM_run()
 for key, value in runned.items():
