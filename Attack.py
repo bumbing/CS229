@@ -1322,7 +1322,7 @@ def spatial_smoothing_run_with_I_FGSM(runned):
                     if l2_norm >= threshold[index]:
                         #print("inside while loop")
                         # Abort the optimization because the score is high enough.
-                        x1, x2 = test_precision(iterations, kmeans_compress((image + noise)[0]), cls_source)
+                        x1, x2 = test_precision(iterations, spatial_smoothing((image + noise)[0], 3, 3), cls_source)
                         success[index] += x1
                         precision[index] += x2 
                         image_success[index] += x1
