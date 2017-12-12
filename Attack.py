@@ -122,7 +122,7 @@ def find_nearest_cluster(current_pixel, k_means, k):
 	sum_of_sq = diff_sq[:,0] + diff_sq[:,1] + diff_sq[:,2]
 	return np.argmin(sum_of_sq)
 
-def kmeans_compress(image, K):
+def kmeans_compress(image, k):
 # (b) Calculate 16 means' centroid
     A = image
 # Random initialize each k-mean's centroid from a cell in small picture
@@ -134,7 +134,7 @@ def kmeans_compress(image, K):
         new_means_count = np.zeros(k).astype(float)
         for i in range(A.shape[0]):
             for j in range(A.shape[1]):
-                nearest_centroid = find_nearest_cluster(A[i,j,:], k_means)
+                nearest_centroid = find_nearest_cluster(A[i,j,:], k_means, k)
                 new_means_count[nearest_centroid] += 1
                 new_means[nearest_centroid] += A[i,j,:]
 	# Replace the k-means with new centroids
@@ -145,7 +145,7 @@ def kmeans_compress(image, K):
     compressed_image = image
     for i in range(compressed_image.shape[0]):
         for j in range(compressed_image.shape[1]):
-            nearest_centroid = find_nearest_cluster(compressed_image[i,j,:], k_means)
+            nearest_centroid = find_nearest_cluster(compressed_image[i,j,:], k_means, k)
             compressed_image[i,j,:] = k_means[nearest_centroid]
         
     return compressed_image
@@ -361,7 +361,7 @@ def bit_compression_run():
 def kmean_with_16_centroids_run(runned, K):
     try:
         # Kmean with 16 centroids
-        result_file.write("k-means with FGSM")
+        result_file.write("k-means with FGSM " + str(K) + "\n")
         total = len(images)
         success = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
@@ -1015,7 +1015,7 @@ def bit_compression_with_iterative_FGSM_run():
 
 def kmean_with_16_centroids_run_with_I_FGSM(runned, K):
     try:
-        result_file.write("k-means compress with I-FGSM")
+        result_file.write("k-means compress with I-FGSM " + str(K) + "\n")
         # Kmean with 16 centroids
         total = len(images)
         success = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
