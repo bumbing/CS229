@@ -688,9 +688,10 @@ def spatial_smoothing_run(runned):
 
 
 # In[ ]:
-def total_variance_run():
+def total_variance_run(lambda_tv, bernoulli_p):
         # Spatial smoothing
-        result_file.write("tv smoothing with FGSM")
+        result_file = open('total_variance_run_result' + str(lambda_tv) + '_' + str(bernoulli_p) + '.txt', 'w')
+        result_file.write("tv smoothing with FGSM " + str(lambda_tv) + " " + str(bernoulli_p) + "\n")
         total = len(images)
         success = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
@@ -792,7 +793,7 @@ def total_variance_run():
 
                 #l2_norm = np.linalg.norm(noise)/np.linalg.norm(image)
                 l2_norm = math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))
-                result_file.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
+                result_file.write ('l2 norm is {}\n'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
 
                 # If the score for the target-class is not high enough.
                 if index < len(threshold):
@@ -816,7 +817,7 @@ def total_variance_run():
                     if l2_norm >= threshold[index]:
                         #print("inside while loop")
                         # Abort the optimization because the score is high enough.
-                        x1, x2 = test_precision(iterations, tv_compress((image + noise)[0]), cls_source)
+                        x1, x2 = test_precision(iterations, tv_compress((image + noise)[0], lambda_tv, bernoulli_p), cls_source)
                         success[index] += x1
                         precision[index] += x2    
                         if(x1==1):
@@ -826,13 +827,14 @@ def total_variance_run():
                             index += 10
 
                 else:  
-                    result_file.write(success)
-                    result_file.write(precision)
+                    result_file.write(str(success) + '\n')
+                    result_file.write(str(precision) + '\n')
                     break;
                 result_file.flush()
                 os.fsync(result_file)
 
             result_file.write("finished image ")
+        result_file.close()
 
 
         #print("limit", l2_limit, "successful rate is ", success/total)
@@ -1346,9 +1348,10 @@ def spatial_smoothing_run_with_I_FGSM(runned):
         return runned
     return runned
 
-def total_variance_run_with_I_FGSM():
+def total_variance_run_with_I_FGSM(lambda_tv, bernoulli_p):
         # Spatial smoothing
-        result_file.write("TV smoothing with I-FGSM")
+        result_file = open('total_variance_run_with_I_FGSM_result' + str(lambda_tv) + '_' + str(bernoulli_p) + '.txt', 'w')
+        result_file.write("TV smoothing with I-FGSM " + str(lambda_tv) + " " + str(bernoulli_p) + "\n")
         total = len(images)
         success = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
         precision = [0., 0., 0., 0., 0., 0., 0., 0., 0.]
@@ -1450,7 +1453,7 @@ def total_variance_run_with_I_FGSM():
 
                 #l2_norm = np.linalg.norm(noise)/np.linalg.norm(image)
                 l2_norm = math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))
-                result_file.write ('l2 norm is {}'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
+                result_file.write ('l2 norm is {}\n'.format(math.sqrt(np.linalg.norm(noise)/np.linalg.norm(image))))
 
                 # If the score for the target-class is not high enough.
                 if index < len(threshold):
@@ -1477,7 +1480,7 @@ def total_variance_run_with_I_FGSM():
                     if l2_norm >= threshold[index]:
                         #print("inside while loop")
                         # Abort the optimization because the score is high enough.
-                        x1, x2 = test_precision(iterations, tv_compress((image + noise)[0]), cls_source)
+                        x1, x2 = test_precision(iterations, tv_compress((image + noise)[0],lambda_tv, bernoulli_p), cls_source)
                         success[index] += x1
                         precision[index] += x2    
                         if(x1==1):
@@ -1487,13 +1490,14 @@ def total_variance_run_with_I_FGSM():
                             index += 10
 
                 else:  
-                    result_file.write(success)
-                    result_file.write(precision)
+                    result_file.write(str(success) + '\n')
+                    result_file.write(str(precision) + '\n')
                     break;
                 result_file.flush()
                 os.fsync(result_file)
 
             result_file.write("finished image ")
+        result_file.close()
 
 
 logging.basicConfig(
@@ -1546,22 +1550,27 @@ for i in range(0, len(content)-2, 3):
     image_success = [float(s) for s in content[i+1].split(',')]
     image_precision = [float(s) for s in content[i+2].split(',')]
     runned[name] = [image_success, image_precision]
-runned_file = open('runned.txt', 'w')
+#runned_file = open('runned.txt', 'w')
 
 #bit_compression_run()
-runned = kmean_with_16_centroids_run(runned, 4)
+#runned = kmean_with_16_centroids_run(runned, 4)
 #runned = kmean_with_16_centroids_run_with_I_FGSM()
 #runned = spatial_smoothing_run(runned)
 #runned = spatial_smoothing_run_with_I_FGSM(runned)
 #bit_compression_with_iterative_FGSM_run()
-for key, value in runned.items():
-    runned_file.write(str(key) + "\n")
-    runned_file.write(str(value[0]) + "\n")
-    runned_file.write(str(value[1]) + "\n")
-runned_file.close()
+#for key, value in runned.items():
+#    runned_file.write(str(key) + "\n")
+#    runned_file.write(str(value[0]) + "\n")
+#    runned_file.write(str(value[1]) + "\n")
+#runned_file.close()
 result_file.close()
 
-
+a = [0.1, 0.25, 1]
+b = [0.1, 0.5, 0.75]
+for i in range(3):
+    for j in range(3):
+        total_variance_run(a[i], b[j])
+        total_variance_run_with_I_FGSM(a[i], b[j])
 # For kmeans, run K = 4 and 8
 # For tv, run tv_compress(image, [0.1, 0.25, 1], [0.1, 0.5, 0.75])  (combination
 # of each one in [])
