@@ -68,9 +68,9 @@ def test_precision(i, image, cls_source):
 
 # Defense: TV compression
 # Simple heuristic to implement total variance
-def tv_compress(image):
-    lambda_tv = 0.5
-    bernoulli_p = 0.25
+def tv_compress(image, lambda_tv, bernoulli_p):
+    #lambda_tv = 0.5
+    #bernoulli_p = 0.25
     A = image
     # TODO: make it stop at diff < threshold instead of 100 iterations
     for x in range(100):
@@ -117,15 +117,14 @@ def bit_compress(image, compress_bit):
 
 
 # Defense: kmeans
-def find_nearest_cluster(current_pixel, k_means):
-	diff_sq = np.square(k_means - np.tile(current_pixel,(16,1)))
+def find_nearest_cluster(current_pixel, k_means, k):
+	diff_sq = np.square(k_means - np.tile(current_pixel,(k,1)))
 	sum_of_sq = diff_sq[:,0] + diff_sq[:,1] + diff_sq[:,2]
 	return np.argmin(sum_of_sq)
 
-def kmeans_compress(image):
+def kmeans_compress(image, K):
 # (b) Calculate 16 means' centroid
     A = image
-    k = 16
 # Random initialize each k-mean's centroid from a cell in small picture
     index1 = np.random.randint(0,A.shape[0],k)
     index2 = np.random.randint(0,A.shape[1],k)
@@ -1561,3 +1560,8 @@ for key, value in runned.items():
     runned_file.write(str(value[1]) + "\n")
 runned_file.close()
 result_file.close()
+
+
+# For kmeans, run K = 4 and 8
+# For tv, run tv_compress(image, [0.1, 0.25, 1], [0.1, 0.5, 0.75])  (combination
+# of each one in [])
